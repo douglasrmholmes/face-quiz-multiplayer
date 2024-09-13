@@ -5,6 +5,11 @@ const socket = io(); // Use relative path for Socket.IO connection
 const singlePlayerButton = document.getElementById('single-player-button');
 const multiPlayerButton = document.getElementById('multi-player-button');
 const startButton = document.getElementById('start-button');
+const startGameButton = document.createElement('button'); // Button for room creator to start the game
+startGameButton.textContent = 'Start Game';
+startGameButton.style.padding = '10px 20px';
+startGameButton.style.fontSize = '16px';
+
 const facesContainer = document.getElementById('faces-container');
 const messageDiv = document.getElementById('message');
 const timerDiv = document.getElementById('timer');
@@ -18,6 +23,7 @@ let timeLeft = SHOW_TIME;
 let timer;
 let showNames = true;
 let gameMode = ''; // 'single' or 'multi'
+let isRoomCreator = false; // Track if the player is the room creator
 
 // Single-Player Mode: Start the game immediately
 singlePlayerButton.addEventListener('click', () => {
@@ -48,8 +54,23 @@ startButton.addEventListener('click', () => {
   messageDiv.textContent = `Waiting for players to join room: ${roomId}...`;
 });
 
+// Room creator is notified
+socket.on('roomCreator', () => {
+  isRoomCreator = true;
+  messageDiv.appendChild(startGameButton); // Show start game button for the room creator
+});
+
+// Handle room player updates
 socket.on('waitingForPlayers', (message) => {
   messageDiv.textContent = message;
+});
+
+// Room creator clicks the start game button
+startGameButton.addEventListener('click', () => {
+  if (isRoomCreator) {
+    socket.emit('startGame');
+    startGameButton.style.display = 'none'; // Hide the button once the game starts
+  }
 });
 
 // Function to start the game in single-player mode

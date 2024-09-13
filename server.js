@@ -13,6 +13,9 @@ app.use(express.static('public'));
 // Maximum number of players allowed in a room
 const MAX_PLAYERS = 10;
 
+// Store room creators to track who can start the game
+const roomCreators = {};
+
 // Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
@@ -31,19 +34,30 @@ io.on('connection', (socket) => {
       socket.roomName = roomId;
       console.log(`${playerName} joined room: ${roomId} (${numPlayers + 1}/${MAX_PLAYERS})`);
 
-      if (numPlayers + 1 === 1) {
-        socket.emit('waitingForPlayers', `Waiting for players to join. (${numPlayers + 1}/${MAX_PLAYERS})`);
-      } else if (numPlayers + 1 >= 2) {
-        // Notify all players that the game can start when there are at least 2 players
-        io.to(roomId).emit('waitingForPlayers', `Room: ${roomId}. Players: ${numPlayers + 1}/${MAX_PLAYERS}`);
-        if (numPlayers + 1 >= 2) {
-          startGame(roomId);
-        }
+      if (numPlayers === 0) {
+        // This player is the room creator
+        roomCreators[roomId] = socket.id;
+        socket.emit('roomCreator'); // Tell the player they are the room creator
+        console.log(`${playerName} is the room creator for room ${roomId}`);
       }
+
+      // Notify all players in the room about the current player count
+      io.to(roomId).emit('waitingForPlayers', `Room: ${roomId}. Players: ${numPlayers + 1}/${MAX_PLAYERS}. Waiting for the game to start...`);
     } else {
       // Room is full (more than MAX_PLAYERS players)
       console.log(`Room ${roomId} is full, player ${playerName} cannot join.`);
       socket.emit('roomFull');
+    }
+  });
+
+  // Room creator starts the game
+  socket.on('startGame', () => {
+    const roomName = socket.roomName;
+    if (roomCreators[roomName] === socket.id) {
+      console.log(`Room creator ${socket.playerName} has started the game in room ${roomName}`);
+      startGame(roomName);
+    } else {
+      console.log(`${socket.playerName} attempted to start the game but is not the room creator.`);
     }
   });
 
