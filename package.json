@@ -1,0 +1,19 @@
+{
+  "name": "face-quiz-multiplayer",
+  "version": "1.0.0",
+  "description": "A multiplayer face quiz game.",
+  "main": "server.js",
+  "engines": {
+    "node": "14.x"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^4.4.1",
+    "node-fetch": "^2.6.7"
+  },
+  "author": "Your Name",
+  "license": "ISC"
+}

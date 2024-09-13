@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Face Quiz Multiplayer</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #0A0A0A;
+      color: #FFFFFF;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    #game-container {
+      text-align: center;
+      padding-top: 20px;
+    }
+    #faces-container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .face-item {
+      margin: 20px;
+      text-align: center;
+    }
+    .face-item img {
+      width: 100px;
+      height: 100px;
+    }
+    .face-input {
+      margin-top: 10px;
+      width: 100px;
+      padding: 5px;
+      font-size: 14px;
+      text-align: center;
+    }
+    #start-button, #submit-button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+    #message {
+      margin-top: 20px;
+    }
+    #timer {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+    }
+    #openai {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 32px;
+    }
+    #name-input-container {
+      margin-top: 20px;
+    }
+    #player-name {
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="timer"></div>
+    <div id="openai">openai</div>
+    <div id="faces-container" style="display: none;"></div>
+    <div id="name-input-container">
+      <input type="text" id="player-name" placeholder="Enter your name" />
+      <button id="start-button">Start Game</button>
+    </div>
+    <div id="message"></div>
+  </div>
+  <!-- Include Socket.IO client library -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
