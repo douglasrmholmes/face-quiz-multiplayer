@@ -63,6 +63,14 @@
       width: 200px;
       margin-bottom: 10px;
     }
+    #mode-selection {
+      margin-top: 20px;
+    }
+    .mode-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+    }
   </style>
 </head>
 <body>
@@ -70,11 +78,20 @@
     <div id="timer"></div>
     <div id="openai">openai</div>
     <div id="faces-container" style="display: none;"></div>
-    <div id="name-input-container">
+    
+    <!-- Mode selection buttons -->
+    <div id="mode-selection">
+      <button id="single-player-button" class="mode-button">Single Player</button>
+      <button id="multi-player-button" class="mode-button">Multiplayer</button>
+    </div>
+
+    <!-- Multiplayer room and name input -->
+    <div id="name-input-container" style="display: none;">
       <input type="text" id="player-name" placeholder="Enter your name" />
       <input type="text" id="room-id" placeholder="Enter or create a room ID" /> <!-- Room ID field -->
       <button id="start-button">Join Room</button>
     </div>
+    
     <div id="message"></div>
   </div>
   <script src="/socket.io/socket.io.js"></script>
