@@ -86,15 +86,38 @@ function startSinglePlayerGame(category) {
 function fetchFaces(category) {
   return new Promise((resolve, reject) => {
     if (category === 'unesco') {
-      // Use a predefined list of UNESCO sites
+      // Use Pixabay API to search for UNESCO World Heritage Site images
       const unescoSites = [
-        { name: 'Great Wall of China', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Mutianyu_Great_Wall_04.jpg/640px-Mutianyu_Great_Wall_04.jpg' },
-        { name: 'Taj Mahal', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Taj_Mahal_in_March_2004.jpg/640px-Taj_Mahal_in_March_2004.jpg' },
-        { name: 'Machu Picchu', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Machu_Picchu%2C_Peru.jpg/640px-Machu_Picchu%2C_Peru.jpg' },
-        { name: 'Stonehenge', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Stonehenge2007_07_30.jpg/640px-Stonehenge2007_07_30.jpg' },
-        { name: 'Statue of Liberty', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Statue_of_Liberty%2C_NY.jpg/640px-Statue_of_Liberty%2C_NY.jpg' }
+        'Great Wall of China',
+        'Taj Mahal',
+        'Machu Picchu',
+        'Stonehenge',
+        'Statue of Liberty'
       ];
-      resolve(unescoSites);
+
+      const apiKey = '45972763-80ccc4101ac506798a0f893fe'; // Replace with your Pixabay API key
+      const imagePromises = unescoSites.map((site) =>
+        fetch(`https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(site)}&image_type=photo&per_page=1`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.hits.length > 0) {
+              return {
+                imageSrc: data.hits[0].webformatURL,
+                name: site
+              };
+            } else {
+              // Fallback to placeholder if no image found
+              return {
+                imageSrc: 'https://via.placeholder.com/500',
+                name: site
+              };
+            }
+          })
+      );
+
+      Promise.all(imagePromises)
+        .then((images) => resolve(images))
+        .catch((error) => reject(error));
     } else {
       // Fetch random user images for 'faces' category
       fetch(`https://randomuser.me/api/?results=5&nat=us,gb,ca,au,nz`)
