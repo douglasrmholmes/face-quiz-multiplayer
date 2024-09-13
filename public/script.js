@@ -9,9 +9,15 @@ const startGameButton = document.createElement('button'); // Button for room cre
 startGameButton.textContent = 'Start Game';
 startGameButton.style.padding = '10px 20px';
 startGameButton.style.fontSize = '16px';
+startGameButton.style.display = 'none'; // Hidden by default until room creator is detected
 
 const facesContainer = document.getElementById('faces-container');
 const messageDiv = document.getElementById('message');
+const controlDiv = document.createElement('div'); // A div to display control-related messages
+controlDiv.style.marginTop = '20px';
+controlDiv.style.color = 'yellow'; // Highlight control messages in yellow
+document.body.appendChild(controlDiv); // Append control messages to the page
+
 const timerDiv = document.getElementById('timer');
 const nameInputContainer = document.getElementById('name-input-container');
 const playerNameInput = document.getElementById('player-name');
@@ -57,11 +63,20 @@ startButton.addEventListener('click', () => {
 // Room creator is notified
 socket.on('roomCreator', () => {
   isRoomCreator = true;
-  messageDiv.appendChild(startGameButton); // Show start game button for the room creator
+  
+  // Display a clear message that they are in control
+  controlDiv.innerHTML = 'You are the room creator! You can start the game when ready.';
+  
+  // Show the "Start Game" button for the room creator
+  startGameButton.style.display = 'block'; 
+  controlDiv.appendChild(startGameButton); // Append the button to the control div
 });
 
 // Handle room player updates
 socket.on('waitingForPlayers', (message) => {
+  if (!isRoomCreator) {
+    controlDiv.innerHTML = 'Waiting for the room creator to start the game...';
+  }
   messageDiv.textContent = message;
 });
 
@@ -70,6 +85,7 @@ startGameButton.addEventListener('click', () => {
   if (isRoomCreator) {
     socket.emit('startGame');
     startGameButton.style.display = 'none'; // Hide the button once the game starts
+    controlDiv.innerHTML = 'Starting the game...'; // Update the control message
   }
 });
 
