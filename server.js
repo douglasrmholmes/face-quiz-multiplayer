@@ -8,43 +8,38 @@ const fetch = require('node-fetch'); // For fetching random users' photos
 
 const PORT = process.env.PORT || 10000; // Use PORT provided by Render, default to 10000
 
-let waitingPlayer = null;
-let gameRooms = 0;
-
 app.use(express.static('public'));
 
 // Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  socket.on('playerReady', (playerName) => {
+  // Handle room creation or joining
+  socket.on('joinRoom', (data) => {
+    const { playerName, roomId } = data;
     socket.playerName = playerName;
-    console.log(`${playerName} is ready with ID: ${socket.id}`);
 
-    if (waitingPlayer) {
-      // Start a new game
-      gameRooms++;
-      const roomName = `room${gameRooms}`;
-      
-      // Assign players to the room
-      socket.join(roomName);
-      waitingPlayer.join(roomName);
-      
-      // Track the room name on each socket
-      socket.roomName = roomName;
-      waitingPlayer.roomName = roomName;
+    const room = io.sockets.adapter.rooms.get(roomId);
+    const numPlayers = room ? room.size : 0;
 
-      console.log(`${waitingPlayer.playerName} and ${playerName} have been assigned to ${roomName}`);
-
-      // Initialize game data
-      startGame(roomName, [waitingPlayer, socket]);
-
-      waitingPlayer = null;
-    } else {
-      // Wait for another player
-      waitingPlayer = socket;
-      console.log(`${playerName} is waiting for an opponent...`);
+    if (numPlayers === 0) {
+      // First player joining the room
+      socket.join(roomId);
+      socket.roomName = roomId;
+      console.log(`${playerName} created and joined room: ${roomId}`);
       socket.emit('waitingForOpponent');
+    } else if (numPlayers === 1) {
+      // Second player joining the room
+      socket.join(roomId);
+      socket.roomName = roomId;
+      console.log(`${playerName} joined room: ${roomId}`);
+
+      // Notify both players that the game is starting
+      startGame(roomId, Array.from(io.sockets.adapter.rooms.get(roomId)).map((id) => io.sockets.sockets.get(id)));
+    } else {
+      // Room is full (more than 2 players)
+      console.log(`Room ${roomId} is full, player ${playerName} cannot join.`);
+      socket.emit('roomFull');
     }
   });
 
@@ -53,7 +48,6 @@ io.on('connection', (socket) => {
     socket.score = data.score;
     console.log(`${socket.playerName} submitted answers with a score of ${socket.score}`);
 
-    // Use the roomName that was explicitly stored on the socket
     const roomName = socket.roomName;
     console.log(`${socket.playerName} is in room: ${roomName}`);
 
@@ -77,7 +71,7 @@ io.on('connection', (socket) => {
           result = "It's a tie!";
         }
 
-        console.log(`Game over in ${roomName}. Result: ${result}`);
+        console.log(`Game over in room ${roomName}. Result: ${result}`);
 
         // Send the result to both players
         io.to(roomName).emit('gameOver', {
@@ -99,10 +93,6 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`Player disconnected: ${socket.id}`);
-    if (waitingPlayer === socket) {
-      waitingPlayer = null;
-      console.log(`${socket.playerName} disconnected while waiting for an opponent.`);
-    }
   });
 });
 
