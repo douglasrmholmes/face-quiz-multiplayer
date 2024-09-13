@@ -25,8 +25,14 @@ io.on('connection', (socket) => {
       // Start a new game
       gameRooms++;
       const roomName = `room${gameRooms}`;
+      
+      // Assign players to the room
       socket.join(roomName);
       waitingPlayer.join(roomName);
+      
+      // Track the room name on each socket
+      socket.roomName = roomName;
+      waitingPlayer.roomName = roomName;
 
       console.log(`${waitingPlayer.playerName} and ${playerName} have been assigned to ${roomName}`);
 
@@ -47,7 +53,8 @@ io.on('connection', (socket) => {
     socket.score = data.score;
     console.log(`${socket.playerName} submitted answers with a score of ${socket.score}`);
 
-    const roomName = Object.keys(socket.rooms).find((room) => room !== socket.id);
+    // Use the roomName that was explicitly stored on the socket
+    const roomName = socket.roomName;
     console.log(`${socket.playerName} is in room: ${roomName}`);
 
     // Check if both players in the room have submitted their answers
