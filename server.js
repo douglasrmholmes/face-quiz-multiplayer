@@ -11,14 +11,12 @@ const PORT = process.env.PORT || 10000; // Use PORT provided by Render, default 
 let waitingPlayer = null;
 let gameRooms = 0;
 
-// Serve static files from the "public" directory
 app.use(express.static('public'));
 
 // Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  // Player ready event
   socket.on('playerReady', (playerName) => {
     socket.playerName = playerName;
 
@@ -40,7 +38,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle player submitting answers
   socket.on('submitAnswers', (data) => {
     socket.answers = data.answers;
     socket.score = data.score;
@@ -54,8 +51,8 @@ io.on('connection', (socket) => {
       const player1 = io.sockets.sockets.get(player1Id);
       const player2 = io.sockets.sockets.get(player2Id);
 
+      // Check if both players have submitted their answers
       if (player1.score !== undefined && player2.score !== undefined) {
-        // Determine the winner
         let result;
         if (player1.score > player2.score) {
           result = `${player1.playerName} wins!`;
@@ -65,14 +62,14 @@ io.on('connection', (socket) => {
           result = "It's a tie!";
         }
 
-        // Send results to both players
+        // Send the result to both players
         io.to(roomName).emit('gameOver', {
           result,
           player1Score: player1.score,
           player2Score: player2.score,
         });
 
-        // Remove players from the room
+        // Remove players from the room after the game ends
         player1.leave(roomName);
         player2.leave(roomName);
       }
