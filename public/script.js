@@ -5,19 +5,9 @@ const socket = io(); // Use relative path for Socket.IO connection
 const singlePlayerButton = document.getElementById('single-player-button');
 const multiPlayerButton = document.getElementById('multi-player-button');
 const startButton = document.getElementById('start-button');
-const startGameButton = document.createElement('button'); // Button for room creator to start the game
-startGameButton.textContent = 'Start Game';
-startGameButton.style.padding = '10px 20px';
-startGameButton.style.fontSize = '16px';
-startGameButton.style.display = 'none'; // Hidden by default until room creator is detected
-
+const categorySelect = document.getElementById('category-select'); // Category select dropdown
 const facesContainer = document.getElementById('faces-container');
 const messageDiv = document.getElementById('message');
-const controlDiv = document.createElement('div'); // A div to display control-related messages
-controlDiv.style.marginTop = '20px';
-controlDiv.style.color = 'yellow'; // Highlight control messages in yellow
-document.body.appendChild(controlDiv); // Append control messages to the page
-
 const timerDiv = document.getElementById('timer');
 const nameInputContainer = document.getElementById('name-input-container');
 const playerNameInput = document.getElementById('player-name');
@@ -31,12 +21,6 @@ let showNames = true;
 let gameMode = ''; // 'single' or 'multi'
 let isRoomCreator = false; // Track if the player is the room creator
 
-// Single-Player Mode: Start the game immediately
-singlePlayerButton.addEventListener('click', () => {
-  gameMode = 'single';
-  startSinglePlayerGame();
-});
-
 // Multiplayer Mode: Show name and room input fields
 multiPlayerButton.addEventListener('click', () => {
   gameMode = 'multi';
@@ -48,14 +32,15 @@ multiPlayerButton.addEventListener('click', () => {
 startButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   const roomId = roomIdInput.value.trim();
+  const category = categorySelect.value; // Get the selected category
   
   if (playerName === '' || roomId === '') {
     alert('Please enter both your name and a room ID.');
     return;
   }
 
-  // Emit event to join room with the given room ID
-  socket.emit('joinRoom', { playerName, roomId });
+  // Emit event to join room with the given room ID and category
+  socket.emit('joinRoom', { playerName, roomId, category });
   nameInputContainer.style.display = 'none';
   messageDiv.textContent = `Waiting for players to join room: ${roomId}...`;
 });
@@ -63,51 +48,27 @@ startButton.addEventListener('click', () => {
 // Room creator is notified
 socket.on('roomCreator', () => {
   isRoomCreator = true;
-  
-  // Display a clear message that they are in control
-  controlDiv.innerHTML = 'You are the room creator! You can start the game when ready.';
-  
-  // Show the "Start Game" button for the room creator
-  startGameButton.style.display = 'block'; 
-  controlDiv.appendChild(startGameButton); // Append the button to the control div
-});
+  messageDiv.innerHTML = 'You are the room creator! You can start the game when ready.';
+  const startGameButton = document.createElement('button');
+  startGameButton.textContent = 'Start Game';
+  startGameButton.style.padding = '10px 20px';
+  startGameButton.style.fontSize = '16px';
+  messageDiv.appendChild(startGameButton);
 
-// Handle room player updates
-socket.on('waitingForPlayers', (message) => {
-  if (!isRoomCreator) {
-    controlDiv.innerHTML = 'Waiting for the room creator to start the game...';
-  }
-  messageDiv.textContent = message;
-});
-
-// Room creator clicks the start game button
-startGameButton.addEventListener('click', () => {
-  if (isRoomCreator) {
+  // Room creator starts the game
+  startGameButton.addEventListener('click', () => {
     socket.emit('startGame');
     startGameButton.style.display = 'none'; // Hide the button once the game starts
-    controlDiv.innerHTML = 'Starting the game...'; // Update the control message
-  }
+  });
 });
 
 // Function to start the game in single-player mode
 function startSinglePlayerGame() {
   messageDiv.textContent = 'Starting single-player game...';
-
-  // Simulate the fetching of faces as if in multiplayer mode
   fetchFaces().then((facesData) => {
     faces = facesData.map((data) => new Face(data.imageSrc, data.name));
     startMemorization();
   });
-}
-
-// Fetch random faces (simulating what the server would do)
-async function fetchFaces() {
-  const response = await fetch('https://randomuser.me/api/?results=5&nat=us,gb,ca,au,nz');
-  const data = await response.json();
-  return data.results.map(user => ({
-    imageSrc: user.picture.large,
-    name: `${user.name.first} ${user.name.last}`
-  }));
 }
 
 socket.on('startGame', (facesData) => {
@@ -207,20 +168,8 @@ function submitAnswers() {
     }
   });
 
-  if (gameMode === 'single') {
-    displaySinglePlayerResults(correct);
-  } else {
-    // Multiplayer: send answers to the server
-    socket.emit('submitAnswers', { answers, score: correct });
-    messageDiv.innerHTML = 'Waiting for other players to finish...';
-  }
-}
-
-function displaySinglePlayerResults(score) {
-  messageDiv.innerHTML = `Game over!<br>Your Score: ${score}/5<br>The game will restart shortly...`;
-  setTimeout(() => {
-    location.reload();
-  }, 5000);
+  socket.emit('submitAnswers', { answers, score: correct });
+  messageDiv.innerHTML = 'Waiting for other players to finish...';
 }
 
 socket.on('gameOver', (results) => {

@@ -35,7 +35,7 @@
       font-size: 14px;
       text-align: center;
     }
-    #start-button, #submit-button {
+    #start-button, #submit-button, #category-select {
       padding: 10px 20px;
       font-size: 16px;
     }
@@ -57,19 +57,11 @@
     #name-input-container {
       margin-top: 20px;
     }
-    #player-name, #room-id {
+    #player-name, #room-id, #category-select {
       padding: 10px;
       font-size: 16px;
       width: 200px;
       margin-bottom: 10px;
-    }
-    #mode-selection {
-      margin-top: 20px;
-    }
-    .mode-button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin: 10px;
     }
   </style>
 </head>
@@ -79,16 +71,16 @@
     <div id="openai">openai</div>
     <div id="faces-container" style="display: none;"></div>
     
-    <!-- Mode selection buttons -->
-    <div id="mode-selection">
-      <button id="single-player-button" class="mode-button">Single Player</button>
-      <button id="multi-player-button" class="mode-button">Multiplayer</button>
-    </div>
-
     <!-- Multiplayer room and name input -->
-    <div id="name-input-container" style="display: none;">
+    <div id="name-input-container">
       <input type="text" id="player-name" placeholder="Enter your name" />
-      <input type="text" id="room-id" placeholder="Enter or create a room ID" /> <!-- Room ID field -->
+      <input type="text" id="room-id" placeholder="Enter or create a room ID" />
+      <!-- Category selection dropdown -->
+      <select id="category-select">
+        <option value="faces">Faces</option>
+        <option value="buildings">Famous Buildings</option>
+        <option value="animals">Animals</option>
+      </select>
       <button id="start-button">Join Room</button>
     </div>
     
