@@ -17,26 +17,34 @@ const roomCreators = {};
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
-  // Handle room creation or joining
+  // Listen for 'joinRoom' event
   socket.on('joinRoom', (data) => {
-    const { playerName, roomId, category } = data; // Get category from client
+    const { playerName, roomId, category } = data;
+    console.log(`Received joinRoom request: Player: ${playerName}, Room: ${roomId}, Category: ${category}`);
+
     socket.playerName = playerName;
-    socket.category = category; // Store category choice on the socket
+    socket.category = category;
     const room = io.sockets.adapter.rooms.get(roomId);
     const numPlayers = room ? room.size : 0;
 
+    // Check if room is full
     if (numPlayers < MAX_PLAYERS) {
       socket.join(roomId);
       socket.roomName = roomId;
+      console.log(`${playerName} joined room: ${roomId}`);
 
+      // Assign room creator if first player
       if (numPlayers === 0) {
         roomCreators[roomId] = socket.id;
         socket.emit('roomCreator');
+        console.log(`${playerName} is the room creator for room: ${roomId}`);
       }
 
+      // Notify all players in the room
       io.to(roomId).emit('waitingForPlayers', `Room: ${roomId}. Players: ${numPlayers + 1}/${MAX_PLAYERS}. Waiting for the game to start...`);
     } else {
       socket.emit('roomFull');
+      console.log(`Room ${roomId} is full`);
     }
   });
 
@@ -108,7 +116,7 @@ async function fetchImagesByCategory(category) {
   }
 }
 
-// Listen on the port specified by Render.com
+// Start the server
 http.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

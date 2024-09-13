@@ -1,17 +1,15 @@
 // public/script.js
 
-const socket = io(); // Use relative path for Socket.IO connection
+const socket = io(); // Ensure Socket.IO connection is working correctly
 
-const singlePlayerButton = document.getElementById('single-player-button');
-const multiPlayerButton = document.getElementById('multi-player-button');
 const startButton = document.getElementById('start-button');
-const categorySelect = document.getElementById('category-select'); // Category select dropdown
-const facesContainer = document.getElementById('faces-container');
-const messageDiv = document.getElementById('message');
-const timerDiv = document.getElementById('timer');
-const nameInputContainer = document.getElementById('name-input-container');
 const playerNameInput = document.getElementById('player-name');
 const roomIdInput = document.getElementById('room-id');
+const categorySelect = document.getElementById('category-select'); // Category select dropdown
+const messageDiv = document.getElementById('message');
+const facesContainer = document.getElementById('faces-container');
+const timerDiv = document.getElementById('timer');
+const nameInputContainer = document.getElementById('name-input-container');
 
 const SHOW_TIME = 30; // seconds
 let faces = [];
@@ -21,27 +19,19 @@ let showNames = true;
 let gameMode = ''; // 'single' or 'multi'
 let isRoomCreator = false; // Track if the player is the room creator
 
-// Multiplayer Mode: Show name and room input fields
-multiPlayerButton.addEventListener('click', () => {
-  gameMode = 'multi';
-  nameInputContainer.style.display = 'block';
-  document.getElementById('mode-selection').style.display = 'none'; // Hide mode selection buttons
-});
-
-// Join room when the start button is clicked in multiplayer mode
+// Ensure the "Join Room" button triggers the event correctly
 startButton.addEventListener('click', () => {
   const playerName = playerNameInput.value.trim();
   const roomId = roomIdInput.value.trim();
   const category = categorySelect.value; // Get the selected category
-  
+
   if (playerName === '' || roomId === '') {
     alert('Please enter both your name and a room ID.');
     return;
   }
 
-  // Emit event to join room with the given room ID and category
+  console.log(`Joining room: ${roomId} as ${playerName} with category: ${category}`); // Debugging log
   socket.emit('joinRoom', { playerName, roomId, category });
-  nameInputContainer.style.display = 'none';
   messageDiv.textContent = `Waiting for players to join room: ${roomId}...`;
 });
 
