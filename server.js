@@ -4,18 +4,21 @@ const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
-const fetch = require('node-fetch'); // Ensure node-fetch version 2 is installed
+const fetch = require('node-fetch'); // For fetching random users' photos
 
-const PORT = process.env.PORT || 3000; // Use process.env.PORT
+const PORT = process.env.PORT || 10000; // Use PORT provided by Render, default to 10000
 
 let waitingPlayer = null;
 let gameRooms = 0;
 
+// Serve static files from the "public" directory
 app.use(express.static('public'));
 
+// Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
 
+  // Player ready event
   socket.on('playerReady', (playerName) => {
     socket.playerName = playerName;
 
@@ -37,6 +40,7 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Handle player submitting answers
   socket.on('submitAnswers', (data) => {
     socket.answers = data.answers;
     socket.score = data.score;
@@ -51,7 +55,7 @@ io.on('connection', (socket) => {
       const player2 = io.sockets.sockets.get(player2Id);
 
       if (player1.score !== undefined && player2.score !== undefined) {
-        // Both players have submitted answers
+        // Determine the winner
         let result;
         if (player1.score > player2.score) {
           result = `${player1.playerName} wins!`;
@@ -68,7 +72,7 @@ io.on('connection', (socket) => {
           player2Score: player2.score,
         });
 
-        // Clean up
+        // Remove players from the room
         player1.leave(roomName);
         player2.leave(roomName);
       }
@@ -127,4 +131,7 @@ async function loadFaces() {
   return faces;
 }
 
-http.list
+// Listen on the port specified by Render.com
+http.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
