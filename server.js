@@ -19,6 +19,7 @@ io.on('connection', (socket) => {
 
   socket.on('playerReady', (playerName) => {
     socket.playerName = playerName;
+    console.log(`${playerName} is ready with ID: ${socket.id}`);
 
     if (waitingPlayer) {
       // Start a new game
@@ -27,6 +28,8 @@ io.on('connection', (socket) => {
       socket.join(roomName);
       waitingPlayer.join(roomName);
 
+      console.log(`${waitingPlayer.playerName} and ${playerName} have been assigned to ${roomName}`);
+
       // Initialize game data
       startGame(roomName, [waitingPlayer, socket]);
 
@@ -34,6 +37,7 @@ io.on('connection', (socket) => {
     } else {
       // Wait for another player
       waitingPlayer = socket;
+      console.log(`${playerName} is waiting for an opponent...`);
       socket.emit('waitingForOpponent');
     }
   });
@@ -41,17 +45,21 @@ io.on('connection', (socket) => {
   socket.on('submitAnswers', (data) => {
     socket.answers = data.answers;
     socket.score = data.score;
+    console.log(`${socket.playerName} submitted answers with a score of ${socket.score}`);
 
     const roomName = Object.keys(socket.rooms).find((room) => room !== socket.id);
+    console.log(`${socket.playerName} is in room: ${roomName}`);
 
-    // Check if both players have submitted their answers
+    // Check if both players in the room have submitted their answers
     const clients = Array.from(io.sockets.adapter.rooms.get(roomName) || []);
     if (clients.length === 2) {
       const [player1Id, player2Id] = clients;
       const player1 = io.sockets.sockets.get(player1Id);
       const player2 = io.sockets.sockets.get(player2Id);
 
-      // Check if both players have submitted their answers
+      console.log(`Player 1 (${player1.playerName}) score: ${player1.score}`);
+      console.log(`Player 2 (${player2.playerName}) score: ${player2.score}`);
+
       if (player1.score !== undefined && player2.score !== undefined) {
         let result;
         if (player1.score > player2.score) {
@@ -61,6 +69,8 @@ io.on('connection', (socket) => {
         } else {
           result = "It's a tie!";
         }
+
+        console.log(`Game over in ${roomName}. Result: ${result}`);
 
         // Send the result to both players
         io.to(roomName).emit('gameOver', {
@@ -72,7 +82,11 @@ io.on('connection', (socket) => {
         // Remove players from the room after the game ends
         player1.leave(roomName);
         player2.leave(roomName);
+      } else {
+        console.log('Waiting for both players to submit their answers...');
       }
+    } else {
+      console.log(`Only one player has submitted in room ${roomName}. Waiting for the other...`);
     }
   });
 
@@ -80,17 +94,22 @@ io.on('connection', (socket) => {
     console.log(`Player disconnected: ${socket.id}`);
     if (waitingPlayer === socket) {
       waitingPlayer = null;
+      console.log(`${socket.playerName} disconnected while waiting for an opponent.`);
     }
   });
 });
 
 // Function to start the game for both players
 async function startGame(roomName, players) {
+  console.log(`Starting game in ${roomName}...`);
+  
   // Fetch faces and names
   const facesData = await loadFaces();
   if (facesData) {
+    console.log(`Faces data fetched successfully for ${roomName}`);
     io.to(roomName).emit('startGame', facesData);
   } else {
+    console.error('Failed to load faces. Sending error to players.');
     io.to(roomName).emit('error', 'Failed to load faces. Please try again later.');
   }
 }
