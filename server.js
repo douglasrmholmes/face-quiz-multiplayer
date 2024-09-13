@@ -10,6 +10,9 @@ const PORT = process.env.PORT || 10000; // Use PORT provided by Render, default 
 
 app.use(express.static('public'));
 
+// Maximum number of players allowed in a room
+const MAX_PLAYERS = 10;
+
 // Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
@@ -22,22 +25,23 @@ io.on('connection', (socket) => {
     const room = io.sockets.adapter.rooms.get(roomId);
     const numPlayers = room ? room.size : 0;
 
-    if (numPlayers === 0) {
-      // First player joining the room
+    if (numPlayers < MAX_PLAYERS) {
+      // Player can join the room
       socket.join(roomId);
       socket.roomName = roomId;
-      console.log(`${playerName} created and joined room: ${roomId}`);
-      socket.emit('waitingForOpponent');
-    } else if (numPlayers === 1) {
-      // Second player joining the room
-      socket.join(roomId);
-      socket.roomName = roomId;
-      console.log(`${playerName} joined room: ${roomId}`);
+      console.log(`${playerName} joined room: ${roomId} (${numPlayers + 1}/${MAX_PLAYERS})`);
 
-      // Notify both players that the game is starting
-      startGame(roomId, Array.from(io.sockets.adapter.rooms.get(roomId)).map((id) => io.sockets.sockets.get(id)));
+      if (numPlayers + 1 === 1) {
+        socket.emit('waitingForPlayers', `Waiting for players to join. (${numPlayers + 1}/${MAX_PLAYERS})`);
+      } else if (numPlayers + 1 >= 2) {
+        // Notify all players that the game can start when there are at least 2 players
+        io.to(roomId).emit('waitingForPlayers', `Room: ${roomId}. Players: ${numPlayers + 1}/${MAX_PLAYERS}`);
+        if (numPlayers + 1 >= 2) {
+          startGame(roomId);
+        }
+      }
     } else {
-      // Room is full (more than 2 players)
+      // Room is full (more than MAX_PLAYERS players)
       console.log(`Room ${roomId} is full, player ${playerName} cannot join.`);
       socket.emit('roomFull');
     }
@@ -49,45 +53,27 @@ io.on('connection', (socket) => {
     console.log(`${socket.playerName} submitted answers with a score of ${socket.score}`);
 
     const roomName = socket.roomName;
-    console.log(`${socket.playerName} is in room: ${roomName}`);
-
-    // Check if both players in the room have submitted their answers
     const clients = Array.from(io.sockets.adapter.rooms.get(roomName) || []);
-    if (clients.length === 2) {
-      const [player1Id, player2Id] = clients;
-      const player1 = io.sockets.sockets.get(player1Id);
-      const player2 = io.sockets.sockets.get(player2Id);
 
-      console.log(`Player 1 (${player1.playerName}) score: ${player1.score}`);
-      console.log(`Player 2 (${player2.playerName}) score: ${player2.score}`);
+    // Check if all players in the room have submitted their answers
+    if (clients.every(clientId => io.sockets.sockets.get(clientId).score !== undefined)) {
+      const players = clients.map(clientId => io.sockets.sockets.get(clientId));
 
-      if (player1.score !== undefined && player2.score !== undefined) {
-        let result;
-        if (player1.score > player2.score) {
-          result = `${player1.playerName} wins!`;
-        } else if (player2.score > player1.score) {
-          result = `${player2.playerName} wins!`;
-        } else {
-          result = "It's a tie!";
-        }
+      console.log(`All players in room ${roomName} have submitted their answers.`);
 
-        console.log(`Game over in room ${roomName}. Result: ${result}`);
+      // Calculate and send the results to all players
+      const results = players.map(player => ({
+        playerName: player.playerName,
+        score: player.score,
+      })).sort((a, b) => b.score - a.score);
 
-        // Send the result to both players
-        io.to(roomName).emit('gameOver', {
-          result,
-          player1Score: player1.score,
-          player2Score: player2.score,
-        });
+      console.log(`Game over in room ${roomName}. Sending results...`);
+      io.to(roomName).emit('gameOver', results);
 
-        // Remove players from the room after the game ends
-        player1.leave(roomName);
-        player2.leave(roomName);
-      } else {
-        console.log('Waiting for both players to submit their answers...');
-      }
+      // Remove players from the room after the game ends
+      players.forEach(player => player.leave(roomName));
     } else {
-      console.log(`Only one player has submitted in room ${roomName}. Waiting for the other...`);
+      console.log(`Waiting for all players in room ${roomName} to submit their answers...`);
     }
   });
 
@@ -96,10 +82,10 @@ io.on('connection', (socket) => {
   });
 });
 
-// Function to start the game for both players
-async function startGame(roomName, players) {
+// Function to start the game for all players in a room
+async function startGame(roomName) {
   console.log(`Starting game in ${roomName}...`);
-  
+
   // Fetch faces and names
   const facesData = await loadFaces();
   if (facesData) {

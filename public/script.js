@@ -45,7 +45,11 @@ startButton.addEventListener('click', () => {
   // Emit event to join room with the given room ID
   socket.emit('joinRoom', { playerName, roomId });
   nameInputContainer.style.display = 'none';
-  messageDiv.textContent = `Waiting for another player to join room: ${roomId}...`;
+  messageDiv.textContent = `Waiting for players to join room: ${roomId}...`;
+});
+
+socket.on('waitingForPlayers', (message) => {
+  messageDiv.textContent = message;
 });
 
 // Function to start the game in single-player mode
@@ -68,15 +72,6 @@ async function fetchFaces() {
     name: `${user.name.first} ${user.name.last}`
   }));
 }
-
-socket.on('waitingForOpponent', () => {
-  messageDiv.textContent = 'Waiting for an opponent...';
-});
-
-socket.on('roomFull', () => {
-  alert('This room is full. Please try a different room ID.');
-  location.reload();
-});
 
 socket.on('startGame', (facesData) => {
   faces = facesData.map((data) => new Face(data.imageSrc, data.name));
@@ -180,7 +175,7 @@ function submitAnswers() {
   } else {
     // Multiplayer: send answers to the server
     socket.emit('submitAnswers', { answers, score: correct });
-    messageDiv.innerHTML = 'Waiting for your opponent to finish...';
+    messageDiv.innerHTML = 'Waiting for other players to finish...';
   }
 }
 
@@ -191,10 +186,13 @@ function displaySinglePlayerResults(score) {
   }, 5000);
 }
 
-socket.on('gameOver', (data) => {
-  const { result, player1Score, player2Score } = data;
+socket.on('gameOver', (results) => {
   facesContainer.style.display = 'none';
-  messageDiv.innerHTML = `${result}<br>Your Score: ${player1Score}<br>Opponent's Score: ${player2Score}<br>The game will restart shortly...`;
+  let resultMessage = 'Game Over!<br>';
+  results.forEach((player, index) => {
+    resultMessage += `${index + 1}. ${player.playerName} - ${player.score}/5<br>`;
+  });
+  messageDiv.innerHTML = resultMessage + 'The game will restart shortly...';
   setTimeout(() => {
     location.reload();
   }, 5000);
