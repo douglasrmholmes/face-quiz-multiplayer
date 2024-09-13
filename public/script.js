@@ -82,6 +82,37 @@ function startSinglePlayerGame(category) {
   });
 }
 
+// Fetch faces for different categories
+function fetchFaces(category) {
+  return new Promise((resolve, reject) => {
+    if (category === 'unesco') {
+      // Use a predefined list of UNESCO sites
+      const unescoSites = [
+        { name: 'Great Wall of China', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/28/Mutianyu_Great_Wall_04.jpg/640px-Mutianyu_Great_Wall_04.jpg' },
+        { name: 'Taj Mahal', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Taj_Mahal_in_March_2004.jpg/640px-Taj_Mahal_in_March_2004.jpg' },
+        { name: 'Machu Picchu', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Machu_Picchu%2C_Peru.jpg/640px-Machu_Picchu%2C_Peru.jpg' },
+        { name: 'Stonehenge', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Stonehenge2007_07_30.jpg/640px-Stonehenge2007_07_30.jpg' },
+        { name: 'Statue of Liberty', imageSrc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Statue_of_Liberty%2C_NY.jpg/640px-Statue_of_Liberty%2C_NY.jpg' }
+      ];
+      resolve(unescoSites);
+    } else {
+      // Fetch random user images for 'faces' category
+      fetch(`https://randomuser.me/api/?results=5&nat=us,gb,ca,au,nz`)
+        .then((response) => response.json())
+        .then((data) => {
+          const faces = data.results.map((user) => ({
+            imageSrc: user.picture.large,
+            name: `${user.name.first} ${user.name.last}`
+          }));
+          resolve(faces);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    }
+  });
+}
+
 socket.on('roomCreator', () => {
   isRoomCreator = true;
   messageDiv.innerHTML = 'You are the room creator! Waiting for players to join...';
@@ -184,18 +215,5 @@ function submitAnswers() {
     }
   });
 
-  socket.emit('submitAnswers', { answers, score: correct });
-  messageDiv.innerHTML = 'Waiting for other players to finish...';
+  messageDiv.innerHTML = `You got ${correct}/${faces.length} correct!`;
 }
-
-socket.on('gameOver', (results) => {
-  facesContainer.style.display = 'none';
-  let resultMessage = 'Game Over!<br>';
-  results.forEach((player, index) => {
-    resultMessage += `${index + 1}. ${player.playerName} - ${player.score}/5<br>`;
-  });
-  messageDiv.innerHTML = resultMessage + 'The game will restart shortly...';
-  setTimeout(() => {
-    location.reload();
-  }, 5000);
-});
