@@ -52,15 +52,6 @@ socket.on('roomCreator', () => {
   });
 });
 
-// Function to start the game in single-player mode
-function startSinglePlayerGame() {
-  messageDiv.textContent = 'Starting single-player game...';
-  fetchFaces().then((facesData) => {
-    faces = facesData.map((data) => new Face(data.imageSrc, data.name));
-    startMemorization();
-  });
-}
-
 socket.on('startGame', (facesData) => {
   faces = facesData.map((data) => new Face(data.imageSrc, data.name));
   messageDiv.textContent = '';

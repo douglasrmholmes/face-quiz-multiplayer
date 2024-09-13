@@ -210,10 +210,10 @@ async function fetchImagesForOtherCategories(category) {
 
   switch (category) {
     case 'buildings':
-      apiUrl = 'https://pixabay.com/api/?key=45972763-80ccc4101ac506798a0f893fe&q=buildings&image_type=photo&per_page=5';
+      apiUrl = 'https://pixabay.com/api/?key=YOUR_PIXABAY_API_KEY&q=buildings&image_type=photo&per_page=5';
       break;
     case 'animals':
-      apiUrl = 'https://pixabay.com/api/?key=45972763-80ccc4101ac506798a0f893fe&q=animals&image_type=photo&per_page=5';
+      apiUrl = 'https://pixabay.com/api/?key=YOUR_PIXABAY_API_KEY&q=animals&image_type=photo&per_page=5';
       break;
     default:
       apiUrl = 'https://randomuser.me/api/?results=5&nat=us,gb,ca,au,nz'; // Default to faces
