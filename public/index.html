@@ -54,6 +54,9 @@
       left: 10px;
       font-size: 32px;
     }
+    #mode-selection, #room-selection, #category-selection {
+      display: none;
+    }
     #name-input-container {
       margin-top: 20px;
     }
@@ -71,18 +74,28 @@
     <div id="openai">openai</div>
     <div id="faces-container" style="display: none;"></div>
     
-    <!-- Multiplayer room and name input -->
-    <div id="name-input-container">
-      <input type="text" id="player-name" placeholder="Enter your name" />
-      <input type="text" id="room-id" placeholder="Enter or create a room ID" />
-      <!-- Category selection dropdown -->
+    <!-- Mode Selection: Single Player, Join Room, Create Room -->
+    <div id="mode-selection">
+      <button id="single-player-button">Single Player</button>
+      <button id="join-room-button">Join Room</button>
+      <button id="create-room-button">Create Room</button>
+    </div>
+    
+    <!-- Room Selection for Join Room -->
+    <div id="room-selection" style="display: none;">
+      <input type="text" id="room-id" placeholder="Enter Room ID" />
+      <button id="join-room-submit-button">Join Room</button>
+    </div>
+    
+    <!-- Category Selection for Create Room or Single Player -->
+    <div id="category-selection" style="display: none;">
       <select id="category-select">
         <option value="faces">Faces</option>
         <option value="buildings">Famous Buildings</option>
         <option value="animals">Animals</option>
         <option value="unesco">UNESCO World Heritage Sites</option>
       </select>
-      <button id="start-button">Join Room</button>
+      <button id="start-game-button">Start Game</button>
     </div>
     
     <div id="message"></div>

@@ -2,54 +2,89 @@
 
 const socket = io(); // Ensure Socket.IO connection is working correctly
 
-const startButton = document.getElementById('start-button');
+const modeSelection = document.getElementById('mode-selection');
+const roomSelection = document.getElementById('room-selection');
+const categorySelection = document.getElementById('category-selection');
 const playerNameInput = document.getElementById('player-name');
 const roomIdInput = document.getElementById('room-id');
 const categorySelect = document.getElementById('category-select'); // Category select dropdown
 const messageDiv = document.getElementById('message');
 const facesContainer = document.getElementById('faces-container');
 const timerDiv = document.getElementById('timer');
-const nameInputContainer = document.getElementById('name-input-container');
 
-const SHOW_TIME = 30; // seconds
-let faces = [];
-let timeLeft = SHOW_TIME;
-let timer;
-let showNames = true;
-let gameMode = ''; // 'single' or 'multi'
+const singlePlayerButton = document.getElementById('single-player-button');
+const joinRoomButton = document.getElementById('join-room-button');
+const createRoomButton = document.getElementById('create-room-button');
+const joinRoomSubmitButton = document.getElementById('join-room-submit-button');
+const startGameButton = document.getElementById('start-game-button');
+
 let isRoomCreator = false; // Track if the player is the room creator
+let gameMode = ''; // 'single' or 'multi'
 
-// Ensure the "Join Room" button triggers the event correctly
-startButton.addEventListener('click', () => {
-  const playerName = playerNameInput.value.trim();
-  const roomId = roomIdInput.value.trim();
-  const category = categorySelect.value; // Get the selected category
+modeSelection.style.display = 'block'; // Show mode selection by default
 
-  if (playerName === '' || roomId === '') {
-    alert('Please enter both your name and a room ID.');
-    return;
-  }
-
-  console.log(`Joining room: ${roomId} as ${playerName} with category: ${category}`); // Debugging log
-  socket.emit('joinRoom', { playerName, roomId, category });
-  messageDiv.textContent = `Waiting for players to join room: ${roomId}...`;
+// Single Player Mode: Show category selection
+singlePlayerButton.addEventListener('click', () => {
+  gameMode = 'single';
+  modeSelection.style.display = 'none';
+  categorySelection.style.display = 'block';
 });
 
-// Room creator is notified
+// Join Room Mode: Show room input field
+joinRoomButton.addEventListener('click', () => {
+  gameMode = 'multi';
+  isRoomCreator = false;
+  modeSelection.style.display = 'none';
+  roomSelection.style.display = 'block';
+});
+
+// Create Room Mode: Show category selection for creating a room
+createRoomButton.addEventListener('click', () => {
+  gameMode = 'multi';
+  isRoomCreator = true;
+  modeSelection.style.display = 'none';
+  categorySelection.style.display = 'block';
+});
+
+// Handle room join submission
+joinRoomSubmitButton.addEventListener('click', () => {
+  const roomId = roomIdInput.value.trim();
+  if (roomId === '') {
+    alert('Please enter a room ID.');
+    return;
+  }
+  
+  socket.emit('joinRoom', { playerName: 'Player', roomId, category: '' });
+  messageDiv.textContent = `Waiting for players to join room: ${roomId}...`;
+  roomSelection.style.display = 'none';
+});
+
+// Start the game after category selection (for single player or room creation)
+startGameButton.addEventListener('click', () => {
+  const category = categorySelect.value;
+  
+  if (gameMode === 'single') {
+    startSinglePlayerGame(category);
+  } else if (isRoomCreator) {
+    const roomId = Math.random().toString(36).substring(7); // Generate random room ID
+    socket.emit('joinRoom', { playerName: 'Player', roomId, category });
+    messageDiv.textContent = `Room ID: ${roomId} - Waiting for players to join...`;
+    categorySelection.style.display = 'none';
+  }
+});
+
+// Function to start the game in single-player mode
+function startSinglePlayerGame(category) {
+  messageDiv.textContent = `Starting single-player game with category: ${category}...`;
+  fetchFaces(category).then((facesData) => {
+    faces = facesData.map((data) => new Face(data.imageSrc, data.name));
+    startMemorization();
+  });
+}
+
 socket.on('roomCreator', () => {
   isRoomCreator = true;
-  messageDiv.innerHTML = 'You are the room creator! You can start the game when ready.';
-  const startGameButton = document.createElement('button');
-  startGameButton.textContent = 'Start Game';
-  startGameButton.style.padding = '10px 20px';
-  startGameButton.style.fontSize = '16px';
-  messageDiv.appendChild(startGameButton);
-
-  // Room creator starts the game
-  startGameButton.addEventListener('click', () => {
-    socket.emit('startGame');
-    startGameButton.style.display = 'none'; // Hide the button once the game starts
-  });
+  messageDiv.innerHTML = 'You are the room creator! Waiting for players to join...';
 });
 
 socket.on('startGame', (facesData) => {
@@ -106,7 +141,7 @@ function displayFaces() {
 
 function startMemorization() {
   showNames = true;
-  timeLeft = SHOW_TIME;
+  timeLeft = 30;
   facesContainer.style.display = 'flex';
   displayFaces();
   timerDiv.textContent = `Time Left: ${timeLeft}`;
