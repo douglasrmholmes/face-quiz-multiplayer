@@ -13,6 +13,109 @@ app.use(express.static('public'));
 const MAX_PLAYERS = 10;
 const roomCreators = {};
 
+// Extended list of UNESCO World Heritage Sites
+const unescoSites = [
+  'Great Wall of China',
+  'Taj Mahal',
+  'Machu Picchu',
+  'Stonehenge',
+  'Statue of Liberty',
+  'Acropolis of Athens',
+  'Angkor Wat',
+  'Colosseum',
+  'Chichen Itza',
+  'Alhambra',
+  'Pyramids of Giza',
+  'Sydney Opera House',
+  'Mont-Saint-Michel',
+  'Grand Canyon National Park',
+  'Yellowstone National Park',
+  'Petra',
+  'Hagia Sophia',
+  'Venice and its Lagoon',
+  'Historic Centre of Rome',
+  'Kremlin and Red Square',
+  'Versailles Palace',
+  'Tower of London',
+  'Mount Fuji',
+  'Historic Sanctuary of Machu Picchu',
+  'Galápagos Islands',
+  'Great Barrier Reef',
+  'Iguazu National Park',
+  'Teotihuacan',
+  'Banff National Park',
+  'Medina of Fez',
+  'Cappadocia',
+  'Hampi',
+  'Jungfrau-Aletsch Protected Area',
+  'Old City of Jerusalem',
+  'Yellowstone National Park',
+  'Cenotes of Yucatán',
+  'Historic Monuments of Kyoto',
+  'Old Havana and its Fortifications',
+  'Antelope Canyon',
+  'Historic Centre of Florence',
+  'Palace of Westminster',
+  'Historic Centre of Bruges',
+  'Forbidden City',
+  'Carlsbad Caverns National Park',
+  'Halong Bay',
+  'Victoria Falls',
+  'Serengeti National Park',
+  'Torres del Paine National Park',
+  'Notre-Dame Cathedral',
+  'Mount Kilimanjaro',
+  'Ngorongoro Conservation Area',
+  'Redwood National and State Parks',
+  'Old Town of Dubrovnik',
+  'Sagrada Familia',
+  'Monticello and the University of Virginia',
+  'Independence Hall',
+  'Giant’s Causeway',
+  'Historic Centre of Vienna',
+  'Rapa Nui National Park (Easter Island)',
+  'Kilimanjaro National Park',
+  'Surtsey',
+  'Auschwitz-Birkenau',
+  'Bryce Canyon National Park',
+  'Plitvice Lakes National Park',
+  'Vatnajökull National Park',
+  'Selous Game Reserve',
+  'Goreme National Park and Rock Sites of Cappadocia',
+  'Sintra',
+  'Historic Centre of Oporto',
+  'Archaeological Site of Delphi',
+  'Olympia',
+  'Royal Botanic Gardens, Kew',
+  'Valley of the Temples',
+  'Cathedral of Notre-Dame, Former Abbey of Saint-Rémi and Palace of Tau, Reims',
+  'Historic Centre of Salzburg',
+  'Wartburg Castle',
+  'Old City of Bern',
+  'Fjords of Norway',
+  'Royal Exhibition Building and Carlton Gardens',
+  'Fortress of Suomenlinna',
+  'Pre-Hispanic City of Teotihuacan',
+  'San Agustin Archaeological Park',
+  'Ancient City of Damascus',
+  'Historic Centre of San Gimignano',
+  'Historic Centre of Tallinn',
+  'Historic Centre of Prague',
+  'Alcázar of Seville',
+  'Pont du Gard',
+  'Canterbury Cathedral',
+  'Galapagos Islands',
+  'Bryggen',
+  'Old City of Salamanca',
+  'City of Cusco',
+  'Old Town of Lijiang',
+  'Medina of Marrakesh',
+  'Island of Mozambique',
+  'Old Town of Corfu',
+  'Mausoleum of the First Qin Emperor',
+  'Newgrange'
+];
+
 // Handle Socket.IO connections
 io.on('connection', (socket) => {
   console.log(`Player connected: ${socket.id}`);
@@ -79,17 +182,38 @@ io.on('connection', (socket) => {
 
 // Function to fetch UNESCO World Heritage Sites and their images using Wikipedia API and Wikimedia API
 async function fetchImagesByCategory(category) {
+  if (category === 'unesco') {
+    // Fetch images for predefined UNESCO World Heritage Sites
+    const images = await Promise.all(
+      unescoSites.map(async (site) => {
+        // Fetch image from Wikimedia API based on site name
+        const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(site)}&prop=pageimages&format=json&pithumbsize=500`);
+        const data = await response.json();
+        const page = Object.values(data.query.pages)[0];
+
+        return {
+          imageSrc: page.thumbnail ? page.thumbnail.source : 'https://via.placeholder.com/500', // Placeholder if no image
+          name: site
+        };
+      })
+    );
+    return images;
+  } else {
+    // Handle other categories (e.g., Faces, Buildings, Animals)
+    return fetchImagesForOtherCategories(category);
+  }
+}
+
+// Function to handle other categories
+async function fetchImagesForOtherCategories(category) {
   let apiUrl;
 
   switch (category) {
-    case 'unesco':
-      apiUrl = 'https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=UNESCO%20World%20Heritage%20Site&format=json';
-      break;
     case 'buildings':
       apiUrl = 'https://pixabay.com/api/?key=45972763-80ccc4101ac506798a0f893fe&q=buildings&image_type=photo&per_page=5';
       break;
     case 'animals':
-      apiUrl = 'https://pixabay.com/api/?key=Y45972763-80ccc4101ac506798a0f893fe&q=animals&image_type=photo&per_page=5';
+      apiUrl = 'https://pixabay.com/api/?key=45972763-80ccc4101ac506798a0f893fe&q=animals&image_type=photo&per_page=5';
       break;
     default:
       apiUrl = 'https://randomuser.me/api/?results=5&nat=us,gb,ca,au,nz'; // Default to faces
@@ -98,29 +222,10 @@ async function fetchImagesByCategory(category) {
   const response = await fetch(apiUrl);
   const data = await response.json();
 
-  if (category === 'unesco') {
-    // Extract article titles for UNESCO World Heritage Sites
-    const sites = data.query.search.slice(0, 5); // Take the first 5 sites
-    const images = await Promise.all(
-      sites.map(async (site) => {
-        // Fetch image from Wikimedia API
-        const imageResponse = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(site.title)}&prop=pageimages&format=json&pithumbsize=500`);
-        const imageData = await imageResponse.json();
-        const page = Object.values(imageData.query.pages)[0]; // Get the first page
-
-        return {
-          imageSrc: page.thumbnail ? page.thumbnail.source : 'https://via.placeholder.com/500', // Placeholder if no image
-          name: site.title, // Use the title as the name of the heritage site
-        };
-      })
-    );
-    return images;
-  } else {
-    return data.hits.map(hit => ({
-      imageSrc: hit.webformatURL,
-      name: hit.tags || 'Unknown'
-    }));
-  }
+  return data.hits.map(hit => ({
+    imageSrc: hit.webformatURL,
+    name: hit.tags || 'Unknown'
+  }));
 }
 
 // Start the server
